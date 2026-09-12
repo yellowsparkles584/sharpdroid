@@ -100,7 +100,7 @@ the scan of a granted folder is **one level, not a search**: the children of the
 
 **a row shows the dump's own identity, and the directory name is what the app works in.** the display name and the title id come from `sce_sys/param.json` and the artwork from `sce_sys/icon0.png`, while the launch intent, the log lines and the staging scripts all still name the directory — so a row whose identity is missing or wrong is still one that can be launched and found on disk.
 
-**every part of that identity degrades to the directory name rather than failing.** no `sce_sys/`, a truncated `param.json`, a file that is not JSON at all, no `icon0.png` — each of those is a game that boots perfectly well, so none of them may cost a row. the title id falls back to whatever a directory named `Dreaming Sarah [PPSA02929]` says in its brackets, and a dump with no artwork draws the same placeholder as one whose artwork has not been decoded yet.
+**every part of that identity degrades to the directory name rather than failing.** no `sce_sys/`, a truncated `param.json`, a file that is not JSON at all, no `icon0.png` — each of those is a game that boots perfectly well, so none of them may cost a row. the title id falls back to whatever a directory name carries in brackets, where it carries anything — a labelling convention of whoever staged the dump rather than part of one, and a dump with no artwork draws the same placeholder as one whose artwork has not been decoded yet.
 
 the display name is chosen out of `localizedParameters` by the device's language: the exact tag, then any entry in that language whatever its region, then the dump's own `defaultLanguage`, then simply the first name present — the last step so that a dump localised into languages the device is not set to still shows a name rather than a directory.
 
@@ -276,7 +276,7 @@ all of them are read in `onCreate`, because the intent is not readable from a wo
 
 | extra | | default |
 | --- | --- | --- |
-| `--es game <name\|path>` | a directory under `games/` on external storage, **or an absolute path to a game directory**, `eboot.bin` appended either way. a leading slash is the whole distinction and a name under `games/` never has one | a hardcoded title |
+| `--es game <name\|path>` | a directory under `games/` on external storage, **or an absolute path to a game directory or to the `eboot.bin` inside one**. a leading slash is the whole distinction and a name under `games/` never has one. a path this app cannot open is looked for inside a folder the user has already granted, and reached through that, before it is refused | a hardcoded title |
 | `--es sharpemu <path>` | an **absolute path** to a build directory | whatever the build manager settled on |
 | `--es driver <name>` | a staged adrenotools package under `gpu-drivers/`. `stock` and the empty string both mean the platform's own driver | the stock driver |
 | `--es driverenv A=1,B=2` | comma-separated, one `--vulkan-driver-env` each. mesa's knobs, which reach the *host* process | none |
@@ -290,6 +290,10 @@ all of them are read in `onCreate`, because the intent is not readable from a wo
 | `--es safgame <name>` | a directory inside a **granted tree** instead of a staged one, which mounts the guest file layer and hands the guest an invented path. absent, the game is a path and no interception is registered at all | absent |
 | `--es saftree <uri>` | which granted tree that directory is in, checked against the grants the app actually holds. the game list sends it because it knows which folder the row came from; absent, the first persisted read grant is used — exact with one granted folder, arbitrary with two | absent |
 | `--ez strict true` | `--strict` on the **payload's** own command line, which fails a launch on an unresolved import instead of continuing without it. everything after the payload path is the guest's command line, which the host layer passes through without reading | the stored setting, or absent |
+
+**the intent's own data names a game as well, and it is the form another application uses.** a tree uri on `Intent.setData` names the dump's directory or its `eboot.bin`, and it wins over `game` when both are there. it has to be a *tree* uri: a dump is a directory whose `sce_sys/param.json` decides which settings a run merges, and a single-document uri cannot reach it.
+
+**both ways of naming a game reach a folder this app has already been given** — one the user added under Game files. a uri permission the sending app attaches is not what makes it work: it covers the document it names and **not** the documents inside it, and the eboot and `param.json` are children the platform then refuses. a path the app cannot open is matched against the same folders, so the requirement is one requirement rather than one per form. all-files access lifts it and is a bonus rather than the design: it is off by default and this app asks for none. [`frontends.md`](frontends.md) is the whole of that contract, and it is the page to send somebody integrating against this app.
 
 **a path in `game` is one code path with two callers, not a mode.** the game list sends one for a game in a granted folder while all-files access is on; a script sends one to reach a library outside the app's own directory. either way the guest is handed an ordinary directory it opens with ordinary syscalls, which is what a staged game is — so a run reached that way carries no machinery a staged run does not.
 

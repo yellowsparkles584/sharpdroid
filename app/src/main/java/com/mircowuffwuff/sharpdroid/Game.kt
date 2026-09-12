@@ -68,7 +68,7 @@ data class Game(
     val sharesSaveDirectory: Boolean get() = emulatorTitleId == UNKNOWN_TITLE_ID
 
 
-    /** the directory name, e.g. `Dreaming Sarah [PPSA02929]`. what [MainActivity] takes as `game`. */
+    /** the directory name, e.g. `Dreaming Sarah`. what [MainActivity] takes as `game`. */
     val folder: String get() = source.folder
 
     /** the dump's artwork for coil, or null. a real PNG, not the `.dds` beside it. */
@@ -111,6 +111,7 @@ data class Game(
          * `sce_sys/`, a truncated `param.json`, a `param.json` that is not JSON at all -- each of
          * those is a game that boots perfectly well, so none of them may cost a row.
          */
+        @JvmStatic
         fun read(source: GameSource): Game {
             val param = readParam(source)
             // **the strict read of the same field, and deliberately not the `titleId` line below.**

@@ -10,9 +10,9 @@
 # the application id moves; the java package does not.
 #
 # **`adb shell` re-splits its command on the device.** passing an argument vector to `adb` settles
-# the host side and nothing else: a game directory is `Title [PPSAxxxxx]`, and the device's own shell
-# would take that as two words and a glob. so every path handed to a device shell is quoted for it
-# here, once, rather than at each call site.
+# the host side and nothing else: a game directory is named after its title, so it has spaces in it
+# and often brackets, and the device's own shell would take that as several words and a glob. so
+# every path handed to a device shell is quoted for it here, once, rather than at each call site.
 
 import re
 import shlex
@@ -304,7 +304,7 @@ class Device:
                 return found.endswith("true")
         return False
 
-    def start(self, package, activity, extras=None, wait=False):
+    def start(self, package, activity, extras=None, wait=False, data=None):
         """launch an activity, naming it in full.
 
         the extras are typed the way `am` types them: a string is `--es`, a boolean `--ez`, an
@@ -312,11 +312,17 @@ class Device:
         nothing is the argument vector it always was, and a setting nobody touched contributes
         nothing to it.
 
+        **`data` is the other way a game can be named**, and it is the one an emulation frontend
+        uses: a content uri on the intent itself rather than an extra. it is a separate parameter
+        rather than another extra because `am` spells it differently and because an intent carries
+        exactly one.
+
         **one quoted command string, and not an argument vector.** passing an argument list to `adb`
         settles this side of the wire and nothing else: the device's own shell receives one command
-        line and splits it again. every game directory is named `Title [PPSAxxxxx]`, so a launch
-        written the obvious way starts a game whose name is the first word of the real one -- which
-        it does *quietly*, because what reaches the app is a name it simply does not have.
+        line and splits it again. a game directory is named after its title and so has spaces in it,
+        and a launch written the obvious way starts a game whose name is the first word of the real
+        one -- which it does *quietly*, because what reaches the app is a name it simply does not
+        have.
 
         **the screen is brought up first, here rather than in each script.** every launch goes
         through this one function and nothing else needs a display -- staging copies files, and the
@@ -329,6 +335,15 @@ class Device:
         if wait:
             command += " -W"
         command += " -n {}".format(quote("{}/{}".format(package, activity)))
+        # **the intent's own data, which is how an app outside this one names a game.**
+        #
+        # **no --grant-read-uri-permission, and it is not an omission.** a frontend attaches one
+        # because it holds the grant; `adb shell` is uid 2000 and holds nothing, so asking to pass a
+        # grant on is refused by the platform before the activity is even resolved -- the whole
+        # launch fails with a SecurityException naming the uri. what a script can hand over is the
+        # uri itself, which the app resolves against the folders it has been granted.
+        if data:
+            command += " -d {}".format(quote(data))
         for name, value in (extras or {}).items():
             if value is None:
                 continue

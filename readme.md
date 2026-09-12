@@ -147,6 +147,7 @@ besides this hand written readme, a bunch of more in-depth documents on the sepa
 - [app](docs/app.md)
 - [audio](docs/audio.md)
 - [build format](docs/build-format.md)
+- [frontends](docs/frontends.md)
 - [guest files](docs/guest-files.md)
 - [host layer](docs/host-layer.md)
 - [pad](docs/pad.md)
@@ -235,11 +236,52 @@ for other users, to be able to import your unique SharpEmu payload, the whole bu
 4. hit the open pull request button
 5. follow the prompts
 
+## for frontend developers
+
+unlike Dolphin and Eden, a `roms/ps5/` directory has to have been added in sharpdroid's user interface, before any game inside `roms/ps5/` can be launched by it.
+
+apparently, PS5 game folders always contain an `eboot.bin`, as well as an `sce_module/` and an `sce_sys/` directory.
+
+```
+Dreaming Sarah
+├── eboot.bin
+├── sce_module/
+└── sce_sys/
+	├── param.json
+	├── icon0.png
+	└── pic0.png
+```
+
+to scan a `roms/ps5/` directory, it is recommended to do roughly [what sharpdroid does](app/src/main/java/com/mircowuffwuff/sharpdroid/GameLibrary.kt), for decent performance.
+
+`sce_sys/` contains a `param.json` with the game's display name in e.g. `localizedParameters.en-US.titleName`, depending on `localizedParameters.defaultLanguage`. `icon0.png` is a developer-supplied 512x square cover artwork and `pic0.png` is a 4K 16:9 game background wallpaper. i imagine, these could be used to replace scraping entirely, for PS5 games!
+
+to launch a game, sharpdroid takes a **tree-based document URI** to the game folder *or* the `eboot.bin` inside it. attached as data of a `com.mircowuffwuff.sharpdroid/com.mircowuffwuff.sharpdroid.MainActivity` intent.
+
+```java
+Uri gameFolder = DocumentsContract.buildDocumentUriUsingTree(
+	romsTree, DocumentsContract.getTreeDocumentId(romsTree) + "/Dreaming Sarah");
+
+Intent intent = new Intent()
+	.setClassName(
+		"com.mircowuffwuff.sharpdroid",
+		"com.mircowuffwuff.sharpdroid.MainActivity")
+	.setData(gameFolder);
+
+startActivity(intent);
+```
+
+alternatively to a Java implementation, a shell command also works.
+
+```shell
+adb shell am start -n com.mircowuffwuff.sharpdroid/com.mircowuffwuff.sharpdroid.MainActivity -d "content://com.android.externalstorage.documents/tree/primary%3Aroms%2Fps5/document/primary%3Aroms%2Fps5%2FDreaming%20Sarah"
+```
+
 ## credits
 
 thanks to [SharpEmu](https://github.com/sharpemu/sharpemu), all its contributors on GitHub, its references [ShadPS4](https://shadps4.net/), [Kyty](https://github.com/InoriRus/Kyty), and Ryujinx, and everyone who has helped support its development.
 
-thanks to [FEX](https://github.com/FEX-Emu/FEX) for providing [FEXCore](https://github.com/FEX-Emu/FEX/tree/main/FEXCore), an x86-64 to arm64 translation layer, and thanks to [Valve](https://www.valvesoftware.com/en/) for funding it.
+thanks to [FEX](https://github.com/FEX-Emu/FEX) for providing their frontend as host layer reference and for providing [FEXCore](https://github.com/FEX-Emu/FEX/tree/main/FEXCore), an x86-64 to arm64 translation layer. thanks to [Valve](https://www.valvesoftware.com/en/) for funding it.
 
 thanks to [libadrenotools](https://github.com/bylaws/libadrenotools) for making it possible to inject custom vulkan drivers with relative ease.
 
