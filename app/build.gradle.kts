@@ -130,11 +130,6 @@ android {
     // here, because the key that quietly appears is a new one and nothing says so until an upgrade
     // fails on somebody else's phone.
     signingConfigs {
-        getByName("debug") {
-            storeFile = file("debug.keystore")
-            storePassword = "android"
-            keyAlias = "sharpdroid"
-            keyPassword = "android"
         }
 
         // the values come from release-signing.properties, which is not in git: a signing password
@@ -154,8 +149,8 @@ android {
                 // succeeded rather than stranding every install. v1 is the JAR signature and is
                 // only read below API 24, which is under this app's own minimum.
                 enableV1Signing = false
-                enableV2Signing = true
-                enableV3Signing = true
+                enableV2Signing = false
+                enableV3Signing = false
             }
         }
     }
