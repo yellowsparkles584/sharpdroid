@@ -130,6 +130,8 @@ android {
     // here, because the key that quietly appears is a new one and nothing says so until an upgrade
     // fails on somebody else's phone.
     signingConfigs {
+        getByName("debug") {
+            storeFile = file("debug.keystore")
         }
 
         // the values come from release-signing.properties, which is not in git: a signing password
